@@ -1,0 +1,958 @@
+swagger: "2.0"
+info:
+  description: "[Documentation](https://docs.synaps.io/)"
+  version: "1.0.0"
+  title: "Synaps Individual"
+  contact:
+    email: "riwan@synaps.io"
+  license:
+    name: "Apache 2.0"
+    url: "http://www.apache.org/licenses/LICENSE-2.0.html"
+securityDefinitions:
+  "Api-Key":
+    type: "apiKey"
+    name: "Api-Key"
+    in: "header"
+definitions:
+  SessionCreated:
+    type: "object"
+    properties:
+      session_id:
+        type: "string"
+        description: "Session-Id just created"
+      sandbox:
+        type: "boolean"
+        description: "true if the session is a sandbox session, false if the session is a normal session"
+  SessionInfo:
+    type: "object"
+    properties:
+      session_id:
+        type: "string"
+      alias:
+        type: "string"
+      status:
+        type: "string"
+        enum:
+          - "PENDING"
+          - "VERIFIED"
+          - "CANCELLED"
+      sandbox:
+        type: "boolean"
+  SessionAlias:
+    type: "object"
+    properties:
+      session_id:
+        type: "string"
+      alias:
+        type: "string"
+      status:
+        type: "string"
+        enum:
+          - "PENDING"
+          - "VERIFIED"
+          - "CANCELLED"
+  IdentityDocument:
+    type: "object"
+    properties:
+      type:
+        type: "string"
+        enum:
+          - "NATIONAL_ID"
+          - "PASSPORT"
+          - "DRIVER_LICENSE"
+          - "RESIDENT_PERMIT"
+      country:
+        type: "string"
+        description: "Issuing country (code ISO-3166)"
+      front_file:
+        type: "string"
+        description: "image of the front document available through a signed URL (15 minutes expiry)"
+      back_file:
+        type: "string"
+        description: "image of the back document available through a signed URL (15 minutes expiry)"
+  IdentityInfo:
+    type: "object"
+    properties:
+      name:
+        type: "string"
+        description: "name of the field"
+      document_side:
+        type: "string"
+        description: "document side where the info is FRONT / BACK"
+      slug:
+        type: "string"
+        description: "unique info identifier"
+      cross_checkable:
+        type: "boolean"
+        description: "crosscheckable if there is a MRZ with a value to crosscheck"
+      cross_checked:
+        type: "boolean"
+        description: "crosschecked with MRZ if any"
+      value:
+        type: "string"
+        description: "value of the info"
+        
+  IdentityDocumentInfo:
+    type: "object"
+    properties:
+      firstname:
+        $ref: "#/definitions/IdentityInfo"
+      lastname:
+        $ref: "#/definitions/IdentityInfo"
+      birth_date:
+        $ref: "#/definitions/IdentityInfo"
+      document_expiration:
+        $ref: "#/definitions/IdentityInfo"
+      document_number:
+        $ref: "#/definitions/IdentityInfo"
+  IdentityDocumentMrz:
+    type: "object"
+    properties:
+      lines:
+        $ref: "#/definitions/IdentityMrz"
+        description: "Lines MRZ"
+      barcode:
+        type: "object"
+        $ref: "#/definitions/IdentityMrz"
+        description: "Barcode MRZ"
+  IdentityMrz:
+    type: "object"
+    properties:
+      name:
+        type: "string"
+        description: "Name of the MRZ field"
+      document_slide:
+        type: "string"
+        description: "document side where the feature is FRONT / BACK"
+      slug:
+        type: "string"
+        description: "unique identifier"
+      valid:
+        type: "boolean"
+        description: "true if MRZ algorithm is verified false if MRZ algorithm is not verified"
+  IdentityFeatures:
+    type: "object"
+    properties:
+      name:
+        type: "string"
+        description: "name of the feature"
+      slug:
+        type: "string"
+        description: "feature unique identifier"
+      document_slide:
+        type: "string"
+        description: "document side where the feature is FRONT / BACK"
+      included:
+        type: "boolean"
+        description: "If the feature is included"
+  IdentityDocumentFeatures:
+    type: "object"
+    properties:
+      security:
+        type: "array"
+        items:
+          $ref: "#/definitions/IdentityFeatures"
+        description: "list of document fields"
+      fields:
+        type: "array"
+        items:
+          $ref: "#/definitions/IdentityFeatures"
+        description: "list of document fields"
+  IdentityDocumentDetails:
+    type: "object"
+    properties:
+      info:
+        $ref: "#/definitions/IdentityDocumentInfo"
+        description: "User info"
+      features:
+        $ref: "#/definitions/IdentityDocumentFeatures"
+        description: "Document features"
+      mrz:
+        type: "object"
+        description: "Document MRZ"
+        $ref: "#/definitions/IdentityDocumentMrz"
+  
+  IdentityVerificationDocument:
+    type: "object"
+    properties:
+      document:
+        $ref: "#/definitions/IdentityDocument"
+        description: "Document metadata"
+      state:
+        type: "string"
+        enum:
+          - "VALIDATED"
+          - "NOT_STARTED"
+          - "PENDING"
+          - "REJECTED"
+      details:
+        $ref: "#/definitions/IdentityDocumentDetails"
+        description: "ID Document details"
+  IdentityDuplicate:
+    type: "object"
+    properties:
+      state:
+        description: "Verification state"
+        type: "string"
+        enum:
+          - "VALIDATED"
+          - "NOT_STARTED"
+          - "PENDING"
+          - "REJECTED"
+  IdentityFacematch:
+    type: "object"
+    properties:
+      state:
+        description: "Verification state"
+        type: "string"
+        enum:
+          - "VALIDATED"
+          - "NOT_STARTED"
+          - "PENDING"
+          - "REJECTED"
+  IdentityHistory:
+    type: "object"
+    properties:
+      user_reason:
+        type: "string"
+      customer_reason:
+        type: "string"
+      rejection_code:
+        type: "string"
+      submitted_at:
+        type: "string"
+      verified_at:
+        type: "string"
+      state:
+        description: "Verification state"
+        type: "string"
+        enum:
+          - "VALIDATED"
+          - "NOT_STARTED"
+          - "PENDING"
+          - "REJECTED"
+  IdentityVerificationResponse:
+    type: "object"
+    properties:
+      document:
+        $ref: "#/definitions/IdentityVerificationDocument"
+      duplicate:
+         $ref: "#/definitions/IdentityDuplicate"
+      facematch:
+        $ref: "#/definitions/IdentityFacematch"
+      history:
+        type: "array"
+        items:
+          $ref: "#/definitions/IdentityHistory"
+      state:
+        description: "Verification state"
+        type: "string"
+        enum:
+          - "VALIDATED"
+          - "NOT_STARTED"
+          - "PENDING"
+          - "REJECTED"
+  ResidencyHistory:
+   type: "object"
+   properties:
+    user_reason:
+      type: "string"
+      description: "User reason is a reason that you should display to your end-user"
+    custome_reason:
+      type: "string"
+      description: "Customer reason is an internal reason and it should not be displayed to your end-user"
+    rejection_code:
+      type: "string"
+      description: "Synaps rejection code"
+    submitted_at:
+      type: "string"
+      description: "Datetime format YYYY-MM-DD hh:ii:ss"
+    verified_at:
+      type: "string"
+      description: "Datetime format YYYY-MM-DD hh:ii:ss"
+    state:
+      description: "Verification state"
+      type: "string"
+      enum:
+        - "VALIDATED"
+        - "NOT_STARTED"
+        - "PENDING"
+        - "REJECTED"
+  ResidencyInfo:
+    type: "object"
+    properties:
+      firstname:
+        type: "string"
+        description: "User firstname"
+      lastname:
+        type: "string"
+        description: "User lastname"
+      address:
+        type: "string"
+        description: "Postal address"
+      country: 
+        type: "string"
+        description: "Country of residence"
+      city:
+        type: "string"
+        description: "City of residence"
+      zipcode:
+        type: "string"
+        description: "Zip Code (might be empty)"
+      issuing_date:
+        type: "string"
+        description: "Date format YYYY-MM-DD"
+  ResidencyDocument:
+    type: "object"
+    properties:
+      type:
+        type: "string"
+        enum:
+          - "ELECTRICITY_BILL"
+          - "GAS_BILL"
+          - "LANDLINE_BILL"
+          - "WATER_BILL"
+          - "INTERNET_BILL"
+          - "BANK_STATEMENT"
+      filetype:
+        type: "string"
+        enum:
+          - "application/pdf"
+          - "image/jpeg"
+          - "image/png"
+      file:
+        type: "string"
+        description: "image of the document available through a signed URL (15 minutes expiry)"
+  ResidencyVerificationDocument:
+    type: "object"
+    properties:
+      document:
+        $ref: "#/definitions/ResidencyDocument"
+      is_accomodation:
+        type: "boolean"
+        description: "true if accomodation proof false if no accomodation proof"
+      state:
+        description: "Verification state"
+        type: "string"
+        enum:
+          - "VALIDATED"
+          - "NOT_STARTED"
+          - "PENDING"
+          - "REJECTED"
+      info:
+        $ref: "#/definitions/ResidencyInfo"
+  ResidencyVerificationResponse:
+    type: "object"
+    properties:
+      document:
+        $ref: "#/definitions/ResidencyVerificationDocument"
+      history:
+        type: "array"
+        items:
+          $ref: "#/definitions/ResidencyHistory"
+      state:
+        description: "Verification state"
+        type: "string"
+        enum:
+          - "VALIDATED"
+          - "NOT_STARTED"
+          - "PENDING"
+          - "REJECTED"
+  PhoneVerificationAttempts:
+    type: "array"
+    items:
+       $ref: "#/definitions/PhoneVerificationAttempt"
+  PhoneVerificationCarrier:
+    type: "object"
+    properties:
+      phone_country:
+        type: "string"
+        description: "country calling code"
+      phone_number:
+        type: "string"
+        description: "phone number"
+  PhoneVerificationResponse:
+    type: "object"
+    properties:
+      phone_country:
+        type: "string"
+        description: "country calling code"
+      phone_number:
+        type: "string"
+        description: "phone number"
+      carrier:
+        $ref: "#/definitions/PhoneVerificationCarrier"
+      attempts:
+        $ref: "#/definitions/PhoneVerificationAttempts"
+      state:
+        description: "Verification state"
+        type: "string"
+        enum:
+          - "VALIDATED"
+          - "NOT_STARTED"
+          - "PENDING"
+          - "REJECTED"
+  PhoneVerificationAttempt:
+    properties:
+      date:
+        type: "string"
+        description: "attempt date (YYYY-MM-DD HH:ii:ss)"
+      methode: 
+        type: "string"
+        enum:
+          - "sms"
+          - "call"
+  LivenessVerificationResponse:
+    type: "object"
+    properties:
+      attempts:
+        type: "number"
+        description: "number of liveness attempts"
+      enrollment_date:
+        type: "string"
+        description: "Successful enrollment date Datetime format : YYYY-MM-DD hh:ii:ss"
+      face:
+        type: "string"
+        description: "image of the user's face available through a signed URL (15 minutes expiry)"
+      state:
+        description: "Verification state"
+        type: "string"
+        enum:
+          - "VALIDATED"
+          - "NOT_STARTED"
+          - "PENDING"
+          - "REJECTED"
+  LivenessInitResponse:
+    properties:
+      token:
+        type: "string"
+        description: "Liveness challenge unique token"
+  LivenessVerifyResponse:
+    properties:
+      success:
+        type: "boolean"
+        description: "true if challenge is passed false if challenge is failed"
+      reason:
+        type: "string"
+        description: "empty if success is true Failure reason challenge failed"
+host: "individual-api.synaps.io"
+schemes:
+  - https
+basePath: /v3
+paths:
+  /session/init:
+    post:
+      description: "Initialize a new session to start a new verification process"
+      tags:
+      - "session"
+      parameters:
+      - name: "alias"
+        in: "query"
+        description: "Custom alias that will be available in session list"
+        required: false
+        type: "string"
+      - name: "Client-Id"
+        in: "header"
+        description: "Client id"
+        required: true
+        type: "string"
+      responses:
+        "200":
+          description: ""
+          schema:
+            $ref: "#/definitions/SessionCreated"
+        "400":
+          description: "Invalid Api Key"
+      security:
+      - "Api-Key": []
+  /session/info:
+    get:
+      description: "Get information about an initially created session"
+      tags:
+      - "session"
+      parameters:
+      - name: "Session-Id"
+        in: "header"
+        description: "Session-Id that you want retrieve info"
+        required: true
+        type: "string"
+      - name: "Client-Id"
+        in: "header"
+        description: "Client id"
+        required: true
+        type: "string"
+      responses:
+        "200":
+          description: ""
+          schema:
+            $ref: "#/definitions/SessionInfo"
+        "400":
+          description: "Invalid Api Key"
+      security:
+      - "Api-Key": []
+  /session/alias:
+    get:
+      description: "List sessions with their alias"
+      tags:
+      - "session"
+      parameters:
+      - name: "alias"
+        in: "query"
+        description: "List sessions with their alias"
+        required: true
+        type: "string"
+      - name: "Client-Id"
+        in: "header"
+        description: "Client id"
+        required: true
+        type: "string"
+      responses:
+        "200":
+          description: ""
+          schema:
+            type: "array"
+            items:
+              $ref: "#/definitions/SessionInfo"
+        "400":
+          description: "Invalid Api Key"
+      security:
+      - "Api-Key": []
+  /session/list/{state}:
+    get:
+      description: "List sessions with their state and alias if needed"
+      tags:
+      - "session"
+      parameters:
+      - name: "state"
+        in: "path"
+        description: "PENDING - When all the steps of the verification flow are not completed yet FINISHED - When all the steps of the verification are completed and VALIDATED CANCELLED - When a session is cancelled"
+        required: true
+        type: "string"
+        enum:
+          - "PENDING"
+          - "VERIFIED"
+          - "CANCELLED"
+      - name: "Client-Id"
+        in: "header"
+        description: "Client id"
+        required: true
+        type: "string"
+      responses:
+        "200":
+          description: ""
+          schema:
+            type: "array"
+            items:
+              $ref: "#/definitions/SessionAlias"
+        "400":
+          description: "Invalid Api Key"
+      security:
+      - "Api-Key": []
+  /identity/submit:
+    post:
+      consumes:
+        - "multipart/form-data"
+      description: "Submit Identity document"
+      tags:
+      - "ID Document"
+      parameters:
+      - name: "Client-Id"
+        in: "header"
+        description: "Client id"
+        required: true
+        type: "string"
+      - name: "step_id"
+        in: "query"
+        description: "Step Id of the current identity step you want to submit"
+        required: true
+        type: "string"
+      - name: "Session-Id"
+        in: "header"
+        description: "Initialised Session-Id"
+        required: true
+        type: "string"
+      - in: "formData"
+        name: "back_document"
+        type: "file"
+        required: true
+        description: "Back Host ID document (image/jpg, image/jpeg, image/png)"
+        x-mimetype: 
+          - "image/jpg"
+          - "image/jpeg"
+          - "image/png"
+      - in: "formData"
+        name: "front_document"
+        type: "file"
+        required: true
+        description: "Front Host ID document (image/jpg, image/jpeg, image/png)"
+        x-mimetype: 
+          - "image/jpg"
+          - "image/jpeg"
+          - "image/png"
+      - in: "formData"
+        name: "document_type"
+        required: true
+        type: "string"
+        enum:
+          - "PASSPORT"
+          - "NATIONAL_ID"
+          - "DRIVER_LICENSE"
+          - "RESIDENT_PERMIT"
+      - in: "formData"
+        name: "country"
+        required: true
+        type: "string"
+        description: "Country of document in alpha 3 code (ISO-3166) (e.g. for France send FRA as country value"
+      responses:
+        "200":
+          description: ""
+          schema:
+            type: "array"
+            items:
+              $ref: "#/definitions/SessionInfo"
+        "400":
+          description: "Invalid Api Key"
+      security:
+      - "Api-Key": []
+  /identity/details:
+    get:
+      description: "All information about identity verification details"
+      tags:
+      - "ID Document"
+      parameters:
+      - name: "Client-Id"
+        in: "header"
+        description: "Client id"
+        required: true
+        type: "string"
+      - name: "step_id"
+        in: "query"
+        description: "Step Id of the current identity step you want to submit"
+        required: true
+        type: "string"
+      - name: "Session-Id"
+        in: "header"
+        description: "Initialised Session-Id"
+        required: true
+        type: "string"
+      responses:
+        "200":
+          description: ""
+          schema:
+            $ref: "#/definitions/IdentityVerificationResponse"
+        "400":
+          description: "Invalid Session ID"
+      security:
+      - "Api-Key": []
+  /residency/submit:
+    post:
+      description: "Send a residency document to verification"
+      tags:
+      - "Proof of residency"
+      consumes:
+         - "multipart/form-data"
+      parameters:
+      - name: "Client-Id"
+        in: "header"
+        description: "Client id"
+        required: true
+        type: "string"
+      - name: "step_id"
+        in: "query"
+        description: "Step Id of the current identity step you want to submit"
+        required: true
+        type: "string"
+      - name: "Session-Id"
+        in: "header"
+        description: "Initialised Session-Id"
+        required: true
+        type: "string"
+      - in: "formData"
+        name: "document"
+        type: "file"
+        required: true
+        description: "must be a valid file (image/jpg, image/jpeg, image/png, application/pdf) max 4MB"
+        x-mimetype: 
+          - "image/jpg"
+          - "image/jpeg"
+          - "image/png"
+          - "application/pdf"
+      - in: "formData"
+        name: "host_id_back_document"
+        type: "file"
+        required: false
+        description: "Back Host ID document (image/jpg, image/jpeg, image/png)"
+        x-mimetype: 
+          - "image/jpg"
+          - "image/jpeg"
+          - "image/png"
+      - in: "formData"
+        name: "host_id_front_document"
+        type: "file"
+        required: false
+        description: "Front Host ID document (image/jpg, image/jpeg, image/png)"
+        x-mimetype: 
+          - "image/jpg"
+          - "image/jpeg"
+          - "image/png"
+      - in: "formData"
+        name: "accomodation_proof"
+        type: "file"
+        required: false
+        description: "Must be a valid file (application/pdf) max 4MB"
+        x-mimetype: 
+          - "application/pdf"
+      - in: "formData"
+        name: "zip_code"
+        type: "string"
+      - in: "formData"
+        name: "address"
+        required: true
+        type: "string"
+        description: "Full postal address"
+      - in: "formData"
+        name: "city"
+        required: true
+        type: "string"
+        description: "City of residence"
+      - in: "formData"
+        name: "document_type"
+        required: true
+        type: "string"
+        enum:
+          - "ELECTRICITY_BILL"
+          - "GAS_BILL"
+          - "LANDLINE_BILL"
+          - "WATER_BILL"
+          - "INTERNET_BILL"
+          - "BANK_STATEMENT"
+      - in: "formData"
+        name: "country"
+        required: true
+        type: "string"
+        description: "Country of document in alpha 3 code (ISO-3166) (e.g. for France send FRA as country value"
+      responses:
+        "200":
+          description: ""
+        "400":
+          description: "Invalid Api Key"
+      security:
+      - "Api-Key": []
+  /residency/details:
+    get:
+      description: "All information about identity verification details"
+      tags:
+      - "Proof of residency"
+      parameters:
+      - name: "Client-Id"
+        in: "header"
+        description: "Client id"
+        required: true
+        type: "string"
+      - name: "step_id"
+        in: "query"
+        description: "Step Id of the current identity step you want to submit"
+        required: true
+        type: "string"
+      - name: "Session-Id"
+        in: "header"
+        description: "Initialised Session-Id"
+        required: true
+        type: "string"
+      responses:
+        "200":
+          description: ""
+          schema:
+            $ref: "#/definitions/ResidencyVerificationResponse"
+        "400":
+          description: "Invalid Api Key"
+      security:
+      - "Api-Key": []
+  /phone/send:
+    post:
+      description: "Send verification code by SMS or Call"
+      tags:
+      - "Phone"
+      consumes:
+         - "multipart/form-data"
+      parameters:
+      - name: "Client-Id"
+        in: "header"
+        description: "Client id"
+        required: true
+        type: "string"
+      - name: "step_id"
+        in: "query"
+        description: "Step Id of the current identity step you want to submit"
+        required: false
+        type: "string"
+      - name: "Session-Id"
+        in: "header"
+        description: "Initialised Session-Id"
+        required: true
+        type: "string"
+      - in: "formData"
+        name: "phone_number"
+        required: true
+        type: "string"
+        description: "Phone number"
+      - in: "formData"
+        name: "country_code"
+        required: true
+        type: "string"
+        description: "Phone Country Code (cf. Country Calling Code Page) (e.g. for France send +33 as country_code value)"
+      - in: "formData"
+        name: "method"
+        required: true
+        description: "call - by call  sms - by text message"
+        type: "string"
+        enum:
+          - "sms"
+          - "call"
+      responses:
+        "200":
+          description: ""
+  /phone/confirm:
+    post:
+      consumes:
+         - "multipart/form-data"
+      description: "Confirm phone number using previously sent authentication codel"
+      tags:
+      - "Phone"
+      parameters:
+      - name: "Client-Id"
+        in: "header"
+        description: "Client id"
+        required: true
+        type: "string"
+      - name: "step_id"
+        in: "query"
+        description: "Step Id of the current identity step you want to submit"
+        required: true
+        type: "string"
+      - name: "Session-Id"
+        in: "header"
+        description: "Initialised Session-Id"
+        required: true
+        type: "string"
+      - in: "formData"
+        name: "code"
+        required: true
+        type: "string"
+        description: "authentication code"
+      responses:
+        "200":
+          description: ""
+  /phone/details:
+    get:
+      description: "All information about identity verification details"
+      tags:
+      - "Phone"
+      parameters:
+      - name: "Client-Id"
+        in: "header"
+        description: "Client id"
+        required: true
+        type: "string"
+      - name: "step_id"
+        in: "query"
+        description: "All information about phone verification details"
+        required: true
+        type: "string"
+      - name: "Session-Id"
+        in: "header"
+        description: "Initialised Session-Id"
+        required: true
+        type: "string"
+      responses:
+        "200":
+          description: ""
+          schema:
+            $ref: "#/definitions/PhoneVerificationResponse"
+        "400":
+          description: "Invalid Api Key"
+      security:
+      - "Api-Key": []
+  /liveness/init:
+    post:
+      description: "Verify if the person in front of his camera is alive"
+      tags:
+      - "Liveness"
+      parameters:
+      - name: "Client-Id"
+        in: "header"
+        description: "Client id"
+        required: true
+        type: "string"
+      - name: "step_id"
+        in: "query"
+        description: "Step Id of the current identity step you want to submit"
+        required: true
+        type: "string"
+      - name: "Session-Id"
+        in: "header"
+        description: "Initialised Session-Id"
+        required: true
+        type: "string"
+      responses:
+        "200":
+          description: ""
+          schema:
+            $ref: "#/definitions/LivenessInitResponse"
+  /liveness/verify:
+    post:
+      description: "Verify if the person in front of his camera is alive"
+      tags:
+      - "Liveness"
+      parameters:
+      - name: "Client-Id"
+        in: "header"
+        description: "Client id"
+        required: true
+        type: "string"
+      - name: "step_id"
+        in: "query"
+        description: "Step Id of the current identity step you want to submit"
+        required: true
+        type: "string"
+      - name: "Session-Id"
+        in: "header"
+        description: "Initialised Session-Id"
+        required: true
+        type: "string"
+      responses:
+        "200":
+          description: ""
+          schema:
+            $ref: "#/definitions/LivenessVerifyResponse"
+  /liveness/details:
+    get:
+      description: "All information about liveness verification details"
+      tags:
+      - "Liveness"
+      parameters:
+      - name: "Client-Id"
+        in: "header"
+        description: "Client id"
+        required: true
+        type: "string"
+      - name: "step_id"
+        in: "query"
+        description: "All information about phone verification details"
+        required: true
+        type: "string"
+      - name: "Session-Id"
+        in: "header"
+        description: "Initialised Session-Id"
+        required: true
+        type: "string"
+      responses:
+        "200":
+          description: ""
+          schema:
+            $ref: "#/definitions/LivenessVerificationResponse"
+        "400":
+          description: "Invalid Api Key"
+      security:
+      - "Api-Key": []
+    
