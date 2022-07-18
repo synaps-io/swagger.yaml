@@ -22,6 +22,7 @@ definitions:
       - "NOT_STARTED"
       - "PENDING"
       - "REJECTED"
+      - ""
   SessionCreated:
     type: "object"
     properties:
@@ -158,11 +159,13 @@ definitions:
     properties:
       security:
         type: "array"
+        x-nullable: true
         items:
           $ref: "#/definitions/IdentityFeatures"
         description: "list of document fields"
       fields:
         type: "array"
+        x-nullable: true
         items:
           $ref: "#/definitions/IdentityFeatures"
         description: "list of document fields"
@@ -171,26 +174,21 @@ definitions:
     properties:
       info:
         $ref: "#/definitions/IdentityDocumentInfo"
-        description: "User info"
       features:
         $ref: "#/definitions/IdentityDocumentFeatures"
-        description: "Document features"
       mrz:
         type: "object"
         description: "Document MRZ"
-        $ref: "#/definitions/IdentityDocumentMrz"
   
   IdentityVerificationDocument:
     type: "object"
     properties:
       document:
         $ref: "#/definitions/IdentityDocument"
-        description: "Document metadata"
       state:
         $ref: "#/definitions/State"
       details:
         $ref: "#/definitions/IdentityDocumentDetails"
-        description: "ID Document details"
   IdentityDuplicate:
     type: "object"
     properties:
@@ -287,12 +285,14 @@ definitions:
           - "WATER_BILL"
           - "INTERNET_BILL"
           - "BANK_STATEMENT"
+          - ""
       filetype:
         type: "string"
         enum:
           - "application/pdf"
           - "image/jpeg"
           - "image/png"
+          - ""
       file:
         type: "string"
         description: "image of the document available through a signed URL (15 minutes expiry)"
@@ -352,7 +352,7 @@ definitions:
       attempts:
         $ref: "#/definitions/PhoneVerificationAttempts"
       state:
-       $ref: "#/definitions/State"
+        $ref: "#/definitions/State"
   PhoneVerificationAttempt:
     properties:
       date:
@@ -566,6 +566,142 @@ definitions:
       sandbox:
         type: "boolean"
         description: "true if session is sandbox false is session is production"
+  CorporateDetails:
+    type: "object"
+    properties:
+      info:
+         $ref: "#/definitions/CorporateInfo"
+      documents:
+        $ref: "#/definitions/CorporateLegalDocs"
+      officer:
+        $ref: "#/definitions/CorporateOfficer"
+      beneficial_owners:
+        $ref: "#/definitions/CorporateBeneficialOwners"
+      aml:
+        $ref: "#/definitions/AmlCheck"
+  CorporateLegalDocs:
+    type: "object"
+    additionalProperties:
+      $ref: "#/definitions/CorporateLegalDocsDetails"
+  CorporateLegalDocsDetails:
+    type: "object"
+    properties:
+      slug:
+        type: "string"
+        description: "Document Slug"
+      name:
+        type: "string"
+        description: "Document Name"
+      is_pdf:
+        type: "boolean"
+        description: "true if document is pdf false if document is not pdf"
+      state:
+       $ref: "#/definitions/State"
+  CorporateOfficer:
+    type: "object"
+    properties:
+      identity:
+        $ref: "#/definitions/IdentityVerificationResponse"
+      liveness:
+        $ref: "#/definitions/LivenessVerificationResponse"
+      residency:
+        $ref: "#/definitions/ResidencyVerificationResponse"
+      aml:
+        $ref: "#/definitions/AmlCheck"
+      state:
+        $ref: "#/definitions/State"
+  CorporateBeneficialOwnersMember:
+    type: "object"
+    properties:
+      member_id:
+        type: "string"
+        description: "Member"
+      firstname:
+        type: "string"
+        description: "Firstname"
+      lastname:
+        type: "string"
+        description: "Lastname"
+      shares:
+        type: "number"
+        description: "Shares (%)"
+      director:
+        type: "boolean"
+        description: "true if is director false if is not director"
+      shareholder:
+        type: "boolean"
+        description: "true if is shareholder false if is not shareholder"
+      identity:
+        $ref: "#/definitions/IdentityVerificationResponse"
+      liveness:
+        $ref: "#/definitions/LivenessVerificationResponse"
+      residency:
+        $ref: "#/definitions/ResidencyVerificationResponse"
+      aml:
+        $ref: "#/definitions/AmlCheck"
+      state:
+        $ref: "#/definitions/State"
+  CorporateBeneficialOwnersMembers:
+    type: "array"
+    items:
+      $ref: "#/definitions/CorporateBeneficialOwnersMember"
+  CorporateBeneficialOwnersCorporate:
+    type: "object"
+    properties:
+      info:
+        $ref: "#/definitions/CorporateInfo"
+      documents:
+        $ref: "#/definitions/CorporateLegalDocs"
+      beneficial_owners:
+        $ref: "#/definitions/CorporateBeneficialOwners"
+      aml:
+        $ref: "#/definitions/CorporateAml"
+  CorporateBeneficialOwnersCorporates:
+    type: "array"
+    items:
+      $ref: "#/definitions/CorporateBeneficialOwnersCorporate"
+  CorporateInfo:
+    type: "object"
+    properties:
+      corporate_id:
+        type: "number"
+        description: "Corporate ID"
+      name:
+        type: "string"
+        description: "Name of the corporate"
+      city:
+        type: "string"
+        description: "City of the corporate"
+      country:
+        type: "string"
+        description: "Country of the corporate"
+      address:
+        type: "string"
+        description: "Addres of the corporate"
+      register_number:
+        type: "string"
+        description: "Registration number of the corporate"
+  CorporateDetailsResponse:
+    type: "object"
+    properties:
+      app_id:
+        type: "string"
+        description: "App ID"
+      session_id:
+        type: "string"
+        description: "Session ID"
+      sandbox:
+        type: "boolean"
+        description: "true if session is sandbox false is session is production"
+      alias:
+        type: "string"
+        description: "Session alias"
+      corporate:
+        $ref: "#/definitions/CorporateDetails"
+  CorporateAml:
+    type: "object"
+  AmlCheck:
+    type: "object"
 host: "corporate-api.synaps.io"
 schemes:
   - https
@@ -589,6 +725,31 @@ paths:
             $ref: "#/definitions/OverviewResponse"
         "400":
           description: "Invalid input"
+  /corporate/details:
+    get:
+      description: "Get information about an initially created session"
+      tags:
+      - "Onboarding"
+      parameters:
+      - name: "Client-Id"
+        in: "header"
+        description: "Client id"
+        required: true
+        type: "string"
+      - name: "Session-Id"
+        in: "header"
+        description: "Session-Id that you want retrieve info"
+        required: true
+        type: "string"
+      responses:
+        "200":
+          description: ""
+          schema:
+            $ref: "#/definitions/CorporateDetailsResponse"
+        "400":
+          description: "Invalid input"
+      security:
+      - "Api-Key": []
   /session/init:
     post:
       description: "Initialize a new session to start a new verification process"
@@ -785,7 +946,6 @@ paths:
           - "application/pdf"
           - "image/jpeg"
           - "image/png"
-      
       responses:
         "200":
           description: ""
