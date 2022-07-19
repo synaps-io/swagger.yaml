@@ -14,6 +14,22 @@ securityDefinitions:
     name: "Api-Key"
     in: "header"
 definitions:
+  Step:
+    type: "string"
+    description: "Name of the step"
+    enum:
+    - LIVENESS
+    - IDENTITY
+    - RESIDENCY
+    - PHONE
+  State:
+    description: "Verification state"
+    type: "string"
+    enum:
+      - "VALIDATED"
+      - "NOT_STARTED"
+      - "PENDING"
+      - "REJECTED"
   SessionCreated:
     type: "object"
     properties:
@@ -435,11 +451,214 @@ definitions:
       reason:
         type: "string"
         description: "empty if success is true Failure reason challenge failed"
+  AppInfo:
+    type: "object"
+    properties:
+      name:
+        type: "string"
+        description: "Name of app"
+      logo_url:
+        type: "string"
+        description: "Logo URL of app"
+  Steps:
+    type: "object"
+    properties:
+      state:
+        $ref: "#/definitions/State"
+      name:
+        $ref: "#/definitions/Step"
+      history:
+        $ref: "#/definitions/StepsHistory"
+  StepHistory:
+    type: "object"
+    properties:
+      review_message:
+        type: "string"
+        description: "Explanation of rejection"
+      review_date:
+        type: "string"
+        description: "Date of review"
+  StepsHistory:
+    type: "array"
+    items:
+      $ref: "#/definitions/StepHistory"
+  RestrictedDocuments:
+    additionalProperties:
+      type: "object"
+      properties:
+        DRIVER_LICENSE:
+          type: "boolean"
+        NATIONAL_ID:
+          type: "boolean"
+        PASSPORT:
+          type: "boolean"
+        RESIDENT_PERMIT:
+          type: "boolean"
+  RestrictedCountries:
+    additionalProperties:
+      type: "boolean"
+  Settings:
+    additionalProperties:
+      type: "object"
+      properties:
+        restricted_documents:
+          $ref: "#/definitions/RestrictedDocuments"
+        restricted_countries:
+          $ref: "#/definitions/RestrictedCountries"
+  SubmittedDocs:
+    type: "object"
+  OverviewResponse:
+    type: "object"
+    properties:
+      app:
+        $ref: "#/definitions/AppInfo"
+      session:
+        $ref: "#/definitions/SessionInfo"
+      steps:
+        items:
+          $ref: "#/definitions/Steps"
+      sandbox:
+        type: "boolean"
+        description: "true if session is sandbox false is session is production"
+      settings:
+        $ref: "#/definitions/Settings"
+      submitted_documents:
+        $ref: "#/definitions/SubmittedDocs"
+  DetailsResponse:
+    type: "object"
+    properties:
+      app_id:
+        type: "string"
+        description: "App ID"
+      session_id:
+        type: "string"
+        description: "Session ID"
+      sandbox:
+        type: "boolean"
+        description: "true if session is sandbox false is session is production"
+      alias:
+        type: "string"
+        description: "Session alias"
+      steps:
+        $ref: "#/definitions/VerificationSteps"
+      session:
+        $ref: "#/definitions/SessionInfo"
+      aml:
+        $ref: "#/definitions/AmlCheck"
+  AmlCheck:
+    type: "object"
+  VerificationSteps:
+    additionalProperties:
+      $ref: "#/definitions/VerificationStepDetails"
+  VerificationStepDetails:
+    type: "object"
+    properties:
+      IDENTITY:
+          $ref: "#/definitions/IdentityVerificationResponse"
+      RESIDENCY:
+        $ref: "#/definitions/ResidencyVerificationResponse"
+      PHONE:
+        $ref: "#/definitions/PhoneVerificationResponse"
+      LIVENESS:
+        $ref: "#/definitions/LivenessVerificationResponse"
 host: "individual-api.synaps.io"
 schemes:
   - https
 basePath: /v3
 paths:
+  /onboarding/overview:
+    get:
+      description: "Gives access to the state of each step and settings with document/country restrictions"
+      tags:
+      - "Onboarding"
+      parameters:
+      - name: "Session-Id"
+        in: "header"
+        description: "Session id"
+        required: true
+        type: "string"
+      responses:
+        "200":
+          description: ""
+          schema:
+            $ref: "#/definitions/OverviewResponse"
+        "400":
+          description: "Invalid Key"
+  /onboarding/details:
+    get:
+      description: "Gives all the details of a verification flow"
+      tags:
+      - "Onboarding"
+      parameters:
+      - name: "Session-Id"
+        in: "header"
+        description: "Session-Id that you want retrieve info"
+        required: true
+        type: "string"
+      - name: "Client-Id"
+        in: "header"
+        description: "Client id"
+        required: true
+        type: "string"
+      responses:
+        "200":
+          description: ""
+          schema:
+            $ref: "#/definitions/DetailsResponse"
+        "400":
+          description: "Invalid Api Key"
+      security:
+      - "Api-Key": []
+  /onboarding/aml/validate:
+    put:
+      description: "Validate an AML task on the manager side."
+      tags:
+      - "AML"
+      parameters:
+      - name: "Session-Id"
+        in: "header"
+        description: "Session-Id that you want retrieve info"
+        required: true
+        type: "string"
+      - name: "Client-Id"
+        in: "header"
+        description: "Client id"
+        required: true
+        type: "string"
+      responses:
+        "200":
+          description: ""
+          schema:
+            $ref: "#/definitions/DetailsResponse"
+        "400":
+          description: "Invalid Api Key"
+      security:
+      - "Api-Key": []
+  /onboarding/aml/reject:
+    put:
+      description: "Reject an AML task on the manager side."
+      tags:
+      - "AML"
+      parameters:
+      - name: "Session-Id"
+        in: "header"
+        description: "Session-Id that you want retrieve info"
+        required: true
+        type: "string"
+      - name: "Client-Id"
+        in: "header"
+        description: "Client id"
+        required: true
+        type: "string"
+      responses:
+        "200":
+          description: ""
+          schema:
+            $ref: "#/definitions/DetailsResponse"
+        "400":
+          description: "Invalid Api Key"
+      security:
+      - "Api-Key": []
   /session/init:
     post:
       description: "Initialize a new session to start a new verification process"
